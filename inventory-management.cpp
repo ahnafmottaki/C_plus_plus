@@ -1,6 +1,59 @@
 #include <iostream>
 #include <limits>
+#include <string.h>
 using namespace std;
+
+void clear_input_buffer()
+{
+  cin.clear();
+  cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+template <class T>
+T get_input(string message, string error_message)
+{
+  T x;
+  while (true)
+  {
+    cout << message << ": ";
+    if (cin >> x)
+    {
+      return x;
+    }
+    else
+    {
+      cout << error_message << endl;
+      clear_input_buffer();
+    }
+  }
+}
+enum class IN_WHERE
+{
+  STARTING,
+  ENDING,
+  BOTH,
+  NONE,
+};
+void display_message(string title, IN_WHERE w)
+{
+  if (w == IN_WHERE::STARTING || w == IN_WHERE::BOTH)
+  {
+    for (int i = 0; i < 30; i++)
+    {
+      cout << "-";
+    }
+    cout << endl;
+  }
+  cout << title << endl;
+  if (w == IN_WHERE::ENDING || w == IN_WHERE::BOTH)
+  {
+    for (int i = 0; i < 30; i++)
+    {
+      cout << "-";
+    }
+    cout << endl;
+  }
+}
 
 enum class Options
 {
@@ -12,19 +65,31 @@ enum class Options
   EXIT_INVENTORY,
 };
 
-string Amazon::name = "Amazon Inventory";
-string Amazon::address = "410 Terry Avenue North, Seattle, Washington, 98109";
-string Amazon::country = "United States of America";
-string Amazon::phone_number = "+1 206 2661000";
-string Amazon::website_url = "www.amazon.com";
+class Product
+{
+private:
+  string title;
+  int quantity;
+  float price;
+
+public:
+  Product(string t, int q, float p) : title(t), quantity(q), price(p)
+  {
+  }
+  void show_details()
+  {
+    display_message("Product Details", IN_WHERE::ENDING);
+    cout << "Product Title: " << title << endl;
+    cout << "Product quantity: " << quantity << endl;
+    cout << "Product price: " << price << endl;
+  }
+};
 
 class Amazon
 {
-  class Product
-  {
-  private:
-    string title;
-  };
+private:
+  int total_products = 0;
+  Product **products = new Product *[0];
 
 public:
   static string name, address, country, phone_number, website_url;
@@ -37,9 +102,44 @@ public:
   void load_from_file();
 };
 
-void addItem()
+string Amazon::name = "Amazon Inventory";
+string Amazon::address = "410 Terry Avenue North, Seattle, Washington, 98109";
+string Amazon::country = "United States of America";
+string Amazon::phone_number = "+1 206 2661000";
+string Amazon::website_url = "www.amazon.com";
+
+void Amazon::add_item()
 {
-  cout << "Add item";
+  display_message("ADD_ITEM TO INVENTORY", IN_WHERE::BOTH);
+  string title;
+  int quantity;
+  float price;
+  while (true)
+  {
+    cout << "Enter title: ";
+    getline(cin, title);
+    if (title.length() <= 3)
+    {
+      display_message("Title must be at least 3 characters long", IN_WHERE::NONE);
+      clear_input_buffer();
+      continue;
+    }
+    break;
+  }
+  quantity = get_input<int>("Enter quantity", "Enter a valid quantity");
+  price = get_input<float>("Enter price", "Please Enter a valid price");
+  Product *new_product = new Product(title, quantity, price);
+  Product **new_products = new Product *[total_products + 1];
+  for (int i = 0; i < total_products; ++i)
+  {
+    new_products[i] = products[i];
+  }
+  new_products[total_products] = new_product;
+  delete[] products;
+  products = new_products;
+  products[total_products]->show_details();
+  total_products++;
+  display_message("Product added to Inventory", IN_WHERE::BOTH);
 }
 
 void searchItem()
@@ -65,9 +165,12 @@ void deleteItem()
 int main()
 {
   int choice;
+  Amazon *my_inventory = new Amazon();
+  display_message("Welcome to " + Amazon::name, IN_WHERE::ENDING);
+
   while (true)
   {
-    cout << "Welcome to " << Amazon::name << endl;
+
     cout << "[1] Add item" << endl;
     cout << "[2] View items" << endl;
     cout << "[3] Search item" << endl;
@@ -75,9 +178,16 @@ int main()
     cout << "[5] Delete item" << endl;
     cout << "[6] Exit Inventory" << endl;
     cout << "Choose one: ";
-    cin >> choice;
+    if (!(cin >> choice))
+    {
+      clear_input_buffer();
+      cout << "Invalid input! Please enter a number between 1-6." << endl;
+      continue;
+    }
+    clear_input_buffer();
     if (choice < 1 || choice > 6)
     {
+      cout << "Please enter a number between 1-6." << endl;
       continue;
     }
     if (static_cast<Options>(choice) == Options::EXIT_INVENTORY)
@@ -88,8 +198,8 @@ int main()
     Options option = static_cast<Options>(choice);
     switch (option)
     {
-    case Options::ADD_ITEM:
-      addItem();
+    case Options::ADD_ITEM:;
+      my_inventory->add_item();
       break;
     case Options::VIEW_ITEMS:
       viewItems();
@@ -103,8 +213,6 @@ int main()
     case Options::DELETE_ITEM:
       deleteItem();
       break;
-    default:
-      continue;
     }
   }
   return 0;
