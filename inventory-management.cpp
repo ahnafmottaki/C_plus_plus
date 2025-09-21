@@ -1,6 +1,7 @@
 #include <iostream>
 #include <limits>
 #include <string.h>
+#include <fstream>
 using namespace std;
 
 void clear_input_buffer()
@@ -73,17 +74,49 @@ private:
   float price;
 
 public:
-  Product(string t, int q, float p) : title(t), quantity(q), price(p)
+  Product(string t = "", int q = 0, float p = 0) : title(t), quantity(q), price(p)
   {
   }
-  void show_details()
+  void show_details() const;
+  string get_title() const
   {
-    display_message("Product Details", IN_WHERE::ENDING);
+    return title;
+  }
+  int get_quantity() const
+  {
+    return quantity;
+  }
+
+  float get_price() const
+  {
+    return price;
+  }
+  friend ofstream &operator<<(ofstream &out, const Product &p);
+  friend ifstream &operator>>(ifstream &fin, Product &p);
+};
+
+void Product::show_details() const
+{
+  {
     cout << "Product Title: " << title << endl;
     cout << "Product quantity: " << quantity << endl;
     cout << "Product price: " << price << endl;
   }
-};
+}
+
+ofstream &operator<<(ofstream &out, const Product &p)
+{
+  out << p.title << endl
+      << p.quantity << endl
+      << p.price << endl;
+  return out;
+}
+
+ifstream &operator>>(ifstream &fin, Product &p)
+{
+  fin >> p.title >> p.quantity >> p.price;
+  return fin;
+}
 
 class Amazon
 {
@@ -108,6 +141,48 @@ string Amazon::country = "United States of America";
 string Amazon::phone_number = "+1 206 2661000";
 string Amazon::website_url = "www.amazon.com";
 
+void Amazon::load_from_file()
+{
+  ifstream fin(name + ".txt");
+  if (!fin)
+  {
+    cout << "No file found. Starting with empty inventory.\n";
+    return;
+  }
+
+  for (int i = 0; i < total_products; ++i)
+  {
+    delete products[i];
+  }
+  delete[] products;
+  products = new Product *[0];
+  total_products = 0;
+  Product temp;
+  while (fin >> temp)
+  {
+    Product *p = new Product(temp.get_title(), temp.get_quantity(), temp.get_price());
+    Product **new_products = new Product *[total_products + 1];
+    for (int i = 0; i < total_products; ++i)
+    {
+      new_products[i] = products[i];
+    }
+    new_products[total_products] = p;
+    delete[] products;
+    products = new_products;
+    total_products++;
+  }
+  fin.close();
+  display_message(total_products + " products loaded from file\n", IN_WHERE::BOTH);
+}
+void Amazon::save_to_file()
+{
+  ofstream outFile(Amazon::name + ".txt");
+  for (int i = 0; i < total_products; ++i)
+  {
+    outFile << *products[i];
+  }
+  outFile.close();
+}
 void Amazon::add_item()
 {
   display_message("ADD_ITEM TO INVENTORY", IN_WHERE::BOTH);
@@ -137,8 +212,10 @@ void Amazon::add_item()
   new_products[total_products] = new_product;
   delete[] products;
   products = new_products;
+  display_message("Product Details", IN_WHERE::ENDING);
   products[total_products]->show_details();
   total_products++;
+  save_to_file();
   display_message("Product added to Inventory", IN_WHERE::BOTH);
 }
 
@@ -147,9 +224,14 @@ void searchItem()
   cout << "{Search item}";
 }
 
-void viewItems()
+void Amazon::view_all_items()
 {
-  cout << "{view item}";
+  display_message("All Products", IN_WHERE::ENDING);
+  for (int n = 0; n < total_products; ++n)
+  {
+    products[n]->show_details();
+    cout << "-----------------------------" << endl;
+  }
 }
 
 void updateItem()
@@ -166,6 +248,7 @@ int main()
 {
   int choice;
   Amazon *my_inventory = new Amazon();
+  my_inventory->load_from_file();
   display_message("Welcome to " + Amazon::name, IN_WHERE::ENDING);
 
   while (true)
@@ -202,7 +285,7 @@ int main()
       my_inventory->add_item();
       break;
     case Options::VIEW_ITEMS:
-      viewItems();
+      my_inventory->view_all_items();
       break;
     case Options::SEARCH_ITEM:
       searchItem();
@@ -215,5 +298,6 @@ int main()
       break;
     }
   }
+  delete my_inventory;
   return 0;
 }
