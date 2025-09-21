@@ -5,20 +5,29 @@ using namespace std;
 enum class Options
 {
   ADD_ITEM = 1,
-  VIEW_ITEM,
+  VIEW_ITEMS,
   SEARCH_ITEM,
   UPDATE_ITEM,
   DELETE_ITEM,
+  EXIT_INVENTORY,
 };
+
+string Amazon::name = "Amazon Inventory";
+string Amazon::address = "410 Terry Avenue North, Seattle, Washington, 98109";
+string Amazon::country = "United States of America";
+string Amazon::phone_number = "+1 206 2661000";
+string Amazon::website_url = "www.amazon.com";
 
 class Amazon
 {
-  class Item
+  class Product
   {
+  private:
+    string title;
   };
 
 public:
-  static string name;
+  static string name, address, country, phone_number, website_url;
   void add_item();
   void view_all_items();
   void search_item_by_name();
@@ -28,55 +37,75 @@ public:
   void load_from_file();
 };
 
-string Amazon::name = "Amazon Inventory";
+void addItem()
+{
+  cout << "Add item";
+}
+
+void searchItem()
+{
+  cout << "{Search item}";
+}
+
+void viewItems()
+{
+  cout << "{view item}";
+}
+
+void updateItem()
+{
+  cout << "{update item}";
+}
+
+void deleteItem()
+{
+  cout << "delete item";
+}
+
 int main()
 {
-  const string welcome_msg = "**Welcome to " + Amazon::name + "**\n";
   int choice;
-  Options option;
-  cout << welcome_msg;
   while (true)
   {
-    cout << "1.ADD ITEM\n2.VIEW_ITEM\n3.SEARCH_ITEM\n4.UPDATE_ITEM\n5.DELETE_ITEM\nChoose one option: ";
-    if (cin >> choice)
+    cout << "Welcome to " << Amazon::name << endl;
+    cout << "[1] Add item" << endl;
+    cout << "[2] View items" << endl;
+    cout << "[3] Search item" << endl;
+    cout << "[4] Update item" << endl;
+    cout << "[5] Delete item" << endl;
+    cout << "[6] Exit Inventory" << endl;
+    cout << "Choose one: ";
+    cin >> choice;
+    if (choice < 1 || choice > 6)
     {
-
-      if (choice >= static_cast<int>(Options::ADD_ITEM) && choice <= static_cast<int>(Options::DELETE_ITEM))
-      {
-        option = static_cast<Options>(choice);
-        break;
-      }
-      else
-      {
-        cout << "Invalid choice. Please enter a number between 1 and 5.\n";
-      }
+      continue;
     }
-    else
+    if (static_cast<Options>(choice) == Options::EXIT_INVENTORY)
     {
-      cout << "Invalid input. Please enter a number.\n";
-      cin.clear();
-      cin.ignore(numeric_limits<streamsize>::max(), '\n');
+      cout << "Inventory exited! Thanks for visiting." << endl;
+      break;
     }
-  }
-  if (option == Options::ADD_ITEM)
-  {
-    cout << "Add item";
-  }
-  else if (option == Options::VIEW_ITEM)
-  {
-    cout << "View item";
-  }
-  else if (option == Options::SEARCH_ITEM)
-  {
-    cout << "Search item";
-  }
-  else if (option == Options::UPDATE_ITEM)
-  {
-    cout << "Update item";
-  }
-  else if (option == Options::DELETE_ITEM)
-  {
-    cout << "Delete item";
+    Options option = static_cast<Options>(choice);
+    switch (option)
+    {
+    case Options::ADD_ITEM:
+      addItem();
+      break;
+    case Options::VIEW_ITEMS:
+      viewItems();
+      break;
+    case Options::SEARCH_ITEM:
+      searchItem();
+      break;
+    case Options::UPDATE_ITEM:
+      updateItem();
+      break;
+    case Options::DELETE_ITEM:
+      deleteItem();
+      break;
+    default:
+      continue;
+    }
   }
   return 0;
 }
