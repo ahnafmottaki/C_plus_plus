@@ -1,6 +1,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <fstream>
 using namespace std;
 
 // enum classes
@@ -34,23 +35,33 @@ class Product
 {
 private:
   string title, description, category, brand;
-  string *tags;
-  float price;
-  int stock, tags_count;
+  string *tags = nullptr;
+  float price = 0.0f;
+  int stock = 0, tags_count = 0;
 
 public:
   Product();
+  Product(string _nothing);
   void show_details() const;
+  friend ofstream &operator<<(ofstream &out, const Product &p);
+  friend ifstream &operator>>(ifstream &in, Product &p);
 };
 
 // Inventory class
 class Inventory
 {
 private:
-  Product **products = new Product *[total_products];
   int total_products = 0;
+  Product **products = nullptr;
+  string file_name;
 
 public:
+  Inventory()
+  {
+    products = new Product *[0];
+    file_name = name + ".txt";
+    load_from_file();
+  }
   static string name, address, helpline_number, website;
   string get_name() const { return name; }
   string get_helpline_number() const { return helpline_number; }
@@ -61,7 +72,7 @@ public:
   void search_item() const;
   void update_item();
   void save_to_file() const;
-  void load_from_file() const;
+  void load_from_file();
   void show_inventory_details() const;
 };
 
@@ -95,6 +106,9 @@ int main()
     case OPTIONS::ADD_ITEM:
       amazon->add_item();
       break;
+    case OPTIONS::VIEW_ITEMS:
+      amazon->view_all_items();
+      break;
     default:
       break;
     }
@@ -121,17 +135,60 @@ void Inventory::add_item()
   products = new_products;
   total_products++;
   show_message_with_borders("Product added to inventory", BORDER_POSITION::BOTH);
+  save_to_file();
   products[total_products - 1]->show_details();
 }
 void Inventory::view_all_items() const
 {
+  show_message_with_borders("VIEWING ALL ITEMS IN INVENTORY", BORDER_POSITION::BOTH);
   for (int i = 0; i < total_products; ++i)
   {
     products[i]->show_details();
   }
 }
-// product class members and functions
 
+void Inventory::save_to_file() const
+{
+  ofstream outFile(file_name, ios::out | ios::trunc);
+  for (int i = 0; i < total_products; ++i)
+  {
+    outFile << *products[i];
+  }
+  outFile.close();
+  show_message_with_borders("File saved to Memory", BORDER_POSITION::BOTH);
+}
+
+void Inventory::load_from_file()
+{
+  ifstream in(file_name, ios::in);
+  if (!in.is_open())
+  {
+    cout << "File doesn't exist. You must have accidentally deleted it!\n";
+    return;
+  }
+  while (true)
+  {
+    Product *new_product = new Product("_nothing");
+    if (!(in >> *new_product))
+    {
+      delete new_product;
+      break;
+    }
+    Product **new_products = new Product *[total_products + 1];
+    for (int i = 0; i < total_products; ++i)
+    {
+      new_products[i] = products[i];
+    }
+    new_products[total_products] = new_product;
+    delete[] products;
+    products = new_products;
+    total_products++;
+  }
+  in.close();
+  cout << "Loaded from file (total_products = " << total_products << ")" << endl;
+}
+
+// * product class members and functions
 Product::Product()
 {
   clear_input();
@@ -153,6 +210,19 @@ Product::Product()
     tag_num++;
   }
 }
+
+Product::Product(string _nothing)
+{
+  title = "";
+  description = "";
+  category = "";
+  brand = "";
+  tags = nullptr;
+  price = 0.0f;
+  stock = 0;
+  tags_count = 0;
+}
+
 void Product::show_details() const
 {
   cout << "Product Name: " << title << endl;
@@ -172,6 +242,50 @@ void Product::show_details() const
   }
   cout << "}";
   show_border();
+}
+
+// * Product class Operator overloading
+ofstream &operator<<(ofstream &out, const Product &p)
+{
+  out << p.title << "%"
+      << p.description << "%"
+      << p.category << "%"
+      << p.brand << "%"
+      << p.price << "%"
+      << p.stock << "%"
+      << p.tags_count << "%";
+
+  for (int i = 0; i < p.tags_count; ++i)
+  {
+    out << p.tags[i] << "%";
+  }
+  return out;
+}
+ifstream &operator>>(ifstream &in, Product &p)
+{
+  string priceStr, stockStr, tagCountStr;
+
+  getline(in, p.title, '%');
+  getline(in, p.description, '%');
+  getline(in, p.category, '%');
+  getline(in, p.brand, '%');
+
+  getline(in, priceStr, '%');
+  getline(in, stockStr, '%');
+  getline(in, tagCountStr, '%');
+
+  p.price = atof(priceStr.c_str());
+  p.stock = atoi(stockStr.c_str());
+  p.tags_count = atoi(tagCountStr.c_str());
+
+  delete[] p.tags; // avoid memory leak if already allocated
+  p.tags = new string[p.tags_count];
+
+  for (int i = 0; i < p.tags_count; ++i)
+  {
+    getline(in, p.tags[i], '%');
+  }
+  return in;
 }
 
 // utility functions
