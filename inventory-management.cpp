@@ -27,7 +27,7 @@ void clear_input();
 void show_message_with_borders(string m, BORDER_POSITION b);
 template <class T>
 T get_and_validate_number(string m, T max, T min);
-string get_and_validate_string_length(string m, int length);
+string get_and_validate_string_length(string m, int max_length, int min_length);
 
 //  classes
 class Product
@@ -75,7 +75,7 @@ int main()
   while (true)
   {
 
-    cout << "[1] add_item\n[2] view_items\n[3] search_item\n[4] update_item\n[5] delete_item\n[6] exit";
+    cout << "[1] ADD ITEM\n[2] VIEW ITEMS\n[3] SEARCH ITEM\n[4] UPDATE ITEM\n[5] DELETE ITEM\n[6] EXIT";
     show_message_with_borders("What can I do for you?: ", BORDER_POSITION::TOP);
     cin >> choice;
     if (choice < 1 || choice > 6)
@@ -109,6 +109,7 @@ string Inventory::helpline_number = "+1 206 2661000", Inventory::website = "http
 // Inventory class member functions
 void Inventory::add_item()
 {
+  show_message_with_borders("ADDING ITEMS TO INVENTORY", BORDER_POSITION::BOTH);
   Product *temp_product = new Product();
   Product **new_products = new Product *[total_products + 1];
   for (int i = 0; i < total_products; ++i)
@@ -122,28 +123,33 @@ void Inventory::add_item()
   show_message_with_borders("Product added to inventory", BORDER_POSITION::BOTH);
   products[total_products - 1]->show_details();
 }
-
+void Inventory::view_all_items() const
+{
+  for (int i = 0; i < total_products; ++i)
+  {
+    products[i]->show_details();
+  }
+}
 // product class members and functions
 
 Product::Product()
 {
   clear_input();
-  title = get_and_validate_string_length("Enter title", 3);
-  description = get_and_validate_string_length("Enter description", 10);
-  category = get_and_validate_string_length("Enter category", 3);
-  brand = get_and_validate_string_length("Enter brand", 3);
-  price = get_and_validate_number<float>("Enter price", 10000, 1);
-  stock = get_and_validate_number<int>("Enter stock", 1000, 1);
-  tags_count = get_and_validate_number<int>("how many tags you want to add", 10, 1);
-  clear_input();
+  title = get_and_validate_string_length("title", 30, 3);
+  description = get_and_validate_string_length("description", 80, 10);
+  category = get_and_validate_string_length("category", 15, 3);
+  brand = get_and_validate_string_length("brand", 15, 3);
+  price = get_and_validate_number<float>("price", 1000, 1);
+  stock = get_and_validate_number<int>("stock", 1000, 1);
+  tags_count = get_and_validate_number<int>("number of tags", 10, 1);
   tags = new string[tags_count];
-  char bef[14] = "Enter tag [";
-  bef[12] = ']';
+  char bef[8] = "tag [";
+  bef[6] = ']';
   char tag_num = '1';
   for (int i = 0; i < tags_count; ++i)
   {
-    bef[11] = tag_num;
-    tags[i] = get_and_validate_string_length(bef, 3);
+    bef[5] = tag_num;
+    tags[i] = get_and_validate_string_length(bef, 15, 3);
     tag_num++;
   }
 }
@@ -170,34 +176,41 @@ void Product::show_details() const
 
 // utility functions
 template <class T>
-T get_and_validate_number(string message, T max, T min)
+T get_and_validate_number(string property, T max, T min)
 {
   T temp;
   while (true)
   {
-    cout << message << ": ";
+    cout << "Enter " << property << ": ";
     cin >> temp;
-    if (temp < min || temp > max)
+    if (cin.fail())
     {
-      cout << "input must be between " << min << " and" << max << endl;
       clear_input();
+      cout << "Invalid input! Please enter a number.\n";
       continue;
     }
+    if (temp < min || temp > max)
+    {
+      clear_input();
+      cout << property << " must be between " << min << " and " << max << " " << endl;
+      continue;
+    }
+    clear_input();
     break;
   }
   return temp;
 }
 
-string get_and_validate_string_length(string message, int length)
+string get_and_validate_string_length(string property, int max_length, int min_length)
 {
   string temp;
   while (true)
   {
-    cout << message << " :";
+    cout << "Enter " << property << ": ";
     getline(cin, temp);
-    if (temp.length() < length)
+    if (temp.length() < min_length || temp.length() > max_length)
     {
-      cout << "must be greater than " << length << "characters" << endl;
+      cout << property << " must be between " << min_length << " to " << max_length << " characters" << endl;
       continue;
     }
     break;
