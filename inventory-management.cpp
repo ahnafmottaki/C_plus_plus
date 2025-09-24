@@ -6,7 +6,7 @@ using namespace std;
 // enum classes
 enum class OPTIONS
 {
-  ADD_ITEM,
+  ADD_ITEM = 1,
   VIEW_ITEMS,
   SEARCH_ITEMS,
   UPDATE_ITEMS,
@@ -25,16 +25,18 @@ enum class BORDER_POSITION
 void show_border();
 void clear_input();
 void show_message_with_borders(string m, BORDER_POSITION b);
+template <class T>
+T get_and_validate_number(string m, T max, T min);
+string get_and_validate_string_length(string m, int length);
 
 //  classes
 class Product
 {
 private:
   string title, description, category, brand;
-  string *tags = new string[total_tags];
-  int total_tags = 0;
+  string *tags;
   float price;
-  int stock;
+  int stock, tags_count;
 
 public:
   Product();
@@ -45,15 +47,15 @@ public:
 class Inventory
 {
 private:
-  Product *products = new Product[totalProducts];
-  int totalProducts = 0;
+  Product **products = new Product *[total_products];
+  int total_products = 0;
 
 public:
   static string name, address, helpline_number, website;
   string get_name() const { return name; }
   string get_helpline_number() const { return helpline_number; }
   string get_website_url() const { return website; }
-  int get_total_products() const { return totalProducts; }
+  int get_total_products() const { return total_products; }
   void add_item();
   void view_all_items() const;
   void search_item() const;
@@ -107,21 +109,102 @@ string Inventory::helpline_number = "+1 206 2661000", Inventory::website = "http
 // Inventory class member functions
 void Inventory::add_item()
 {
-  Product temp_product;
-  Product *newProducts = new Product[totalProducts + 1];
-  for (int i = 0; i < totalProducts; ++i)
+  Product *temp_product = new Product();
+  Product **new_products = new Product *[total_products + 1];
+  for (int i = 0; i < total_products; ++i)
   {
-    newProducts[i] = products[i];
+    new_products[i] = products[i];
   }
+  new_products[total_products] = temp_product;
+  delete[] products;
+  products = new_products;
+  total_products++;
+  show_message_with_borders("Product added to inventory", BORDER_POSITION::BOTH);
+  products[total_products - 1]->show_details();
 }
 
 // product class members and functions
+
+Product::Product()
+{
+  clear_input();
+  title = get_and_validate_string_length("Enter title", 3);
+  description = get_and_validate_string_length("Enter description", 10);
+  category = get_and_validate_string_length("Enter category", 3);
+  brand = get_and_validate_string_length("Enter brand", 3);
+  price = get_and_validate_number<float>("Enter price", 10000, 1);
+  stock = get_and_validate_number<int>("Enter stock", 1000, 1);
+  tags_count = get_and_validate_number<int>("how many tags you want to add", 10, 1);
+  clear_input();
+  tags = new string[tags_count];
+  char bef[14] = "Enter tag [";
+  bef[12] = ']';
+  char tag_num = '1';
+  for (int i = 0; i < tags_count; ++i)
+  {
+    bef[11] = tag_num;
+    tags[i] = get_and_validate_string_length(bef, 3);
+    tag_num++;
+  }
+}
 void Product::show_details() const
 {
-  cout << "showing product details";
+  cout << "Product Name: " << title << endl;
+  cout << "Product Description: " << description << endl;
+  cout << "Product Category: " << category << endl;
+  cout << "Product Brand: " << brand << endl;
+  cout << "Product Stock: " << stock << endl;
+  cout << "Product Price: " << price << endl;
+  cout << "Product tags: {";
+  for (int i = 0; i < tags_count; ++i)
+  {
+    cout << " '" << tags[i] << "'";
+    if (i != tags_count - 1)
+    {
+      cout << ", ";
+    }
+  }
+  cout << "}";
+  show_border();
 }
 
 // utility functions
+template <class T>
+T get_and_validate_number(string message, T max, T min)
+{
+  T temp;
+  while (true)
+  {
+    cout << message << ": ";
+    cin >> temp;
+    if (temp < min || temp > max)
+    {
+      cout << "input must be between " << min << " and" << max << endl;
+      clear_input();
+      continue;
+    }
+    break;
+  }
+  return temp;
+}
+
+string get_and_validate_string_length(string message, int length)
+{
+  string temp;
+  while (true)
+  {
+    cout << message << " :";
+    getline(cin, temp);
+    if (temp.length() < length)
+    {
+      cout << "must be greater than " << length << "characters" << endl;
+      continue;
+    }
+    break;
+  }
+  return temp;
+}
+
 void show_border()
 {
   cout << endl;
