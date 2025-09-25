@@ -50,8 +50,8 @@ public:
   float get_Price() { return price; }
   void show_details() const;
   void update_product();
-  friend ofstream &operator<<(ofstream &out, const Product &p);
-  friend ifstream &operator>>(ifstream &in, Product &p);
+  friend ostream &operator<<(ostream &out, const Product &p);
+  friend istream &operator>>(istream &in, Product &p);
 };
 
 // Inventory class
@@ -80,7 +80,7 @@ public:
   void update_item();
   void save_to_file() const;
   void load_from_file();
-  void show_inventory_details() const;
+  void delete_item();
 };
 
 int main()
@@ -123,6 +123,7 @@ int main()
       amazon->update_item();
       break;
     default:
+      amazon->delete_item();
       break;
     }
   }
@@ -153,6 +154,11 @@ void Inventory::add_item()
 }
 void Inventory::view_all_items() const
 {
+  if (total_products == 0)
+  {
+    show_message_with_borders("NO PRODUCT IN THE INVENTORY", BORDER_POSITION::BOTH);
+    return;
+  }
   show_message_with_borders("VIEWING ALL ITEMS IN INVENTORY", BORDER_POSITION::BOTH);
   for (int i = 0; i < total_products; ++i)
   {
@@ -168,7 +174,6 @@ void Inventory::save_to_file() const
     outFile << *products[i];
   }
   outFile.close();
-  show_message_with_borders("File saved to Memory", BORDER_POSITION::BOTH);
 }
 
 void Inventory::load_from_file()
@@ -203,18 +208,24 @@ void Inventory::load_from_file()
 
 void Inventory::search_item() const
 {
+  clear_input();
   string temp_title;
   cout << "Enter product title: ";
-  clear_input();
   getline(cin, temp_title);
+  bool product_found = false;
   for (int i = 0; i < total_products; ++i)
   {
     if (temp_title == products[i]->get_title())
     {
+      product_found = true;
       show_message_with_borders("Here is the Product with title " + temp_title, BORDER_POSITION::BOTH);
       products[i]->show_details();
       break;
     }
+  }
+  if (!product_found)
+  {
+    show_message_with_borders("PRODUCT NOT FOUND", BORDER_POSITION::BOTH);
   }
 }
 
@@ -222,15 +233,15 @@ void Inventory::update_item()
 {
   clear_input();
   show_message_with_borders("UPDATE ITEM", BORDER_POSITION::BOTH);
-  cout << "Enter product title: ";
   string temp_title;
+  cout << "Enter title: ";
   getline(cin, temp_title);
   Product *found_product = nullptr;
   for (int i = 0; i < total_products; ++i)
   {
     if (temp_title == products[i]->get_title())
     {
-      show_message_with_borders("PRODUCT FOUND", BORDER_POSITION::BOTH);
+      show_message_with_borders("PRODUCT FOUND!", BORDER_POSITION::BOTH);
       found_product = products[i];
       break;
     }
@@ -240,17 +251,81 @@ void Inventory::update_item()
     show_message_with_borders("PRODUCT IS NOT IN THE INVENTORY", BORDER_POSITION::BOTH);
     return;
   }
-  found_product->show_details();
   found_product->update_product();
   found_product = nullptr;
   save_to_file();
   show_message_with_borders("PRODUCT UPDATED SUCCESSFULLY", BORDER_POSITION::BOTH);
 }
 
+void Inventory::delete_item()
+{
+  if (total_products == 0)
+  {
+    show_message_with_borders("No products to delete", BORDER_POSITION::BOTH);
+    return;
+  }
+  clear_input();
+  show_message_with_borders("DELETE ITEM", BORDER_POSITION::BOTH);
+  cout << "Enter product title: ";
+  string temp_title;
+  getline(cin, temp_title);
+  Product **new_products = new Product *[total_products];
+  bool product_deleted = false;
+  int new_index = 0;
+  for (int i = 0; i < total_products; ++i)
+  {
+    if (!product_deleted && products[i]->get_title() == temp_title)
+    {
+      product_deleted = true;
+      delete products[i];
+      show_message_with_borders("PRODUCT FOUND. DELETING....", BORDER_POSITION::BOTH);
+      continue;
+    }
+    new_products[new_index++] = products[i];
+  }
+  if (!product_deleted)
+  {
+    delete[] new_products;
+    show_message_with_borders("PRODUCT NOT FOUND", BORDER_POSITION::BOTH);
+    return;
+  }
+  delete[] products;
+  total_products--;
+  products = new Product *[total_products];
+  for (int i = 0; i < total_products; ++i)
+  {
+    products[i] = new_products[i];
+  }
+  delete[] new_products;
+
+  save_to_file();
+  show_message_with_borders("PRODUCT DELETED AND SAVED TO MEMORY", BORDER_POSITION::BOTH);
+}
 // * product class members and functions
 Product::Product()
 {
-  update_product();
+  clear_input();
+  title = get_and_validate_string_length("title", 30, 3);
+  description = get_and_validate_string_length("description", 80, 10);
+  category = get_and_validate_string_length("category", 15, 3);
+  brand = get_and_validate_string_length("brand", 15, 3);
+  price = get_and_validate_number<float>("price", 1000, 1);
+  stock = get_and_validate_number<int>("stock", 1000, 1);
+  tags_count = get_and_validate_number<int>("number of tags", 10, 1);
+  if (tags != nullptr)
+  {
+    delete[] tags;
+  }
+  tags = new string[tags_count];
+  char bef[8] = "tag [";
+  bef[6] = ']';
+  char tag_num = '1';
+  for (int i = 0; i < tags_count; ++i)
+  {
+    bef[5] = tag_num;
+    tags[i] = get_and_validate_string_length(bef, 15, 3);
+    tag_num++;
+  }
 }
 
 Product::Product(string _nothing)
@@ -267,7 +342,6 @@ Product::Product(string _nothing)
 
 void Product::update_product()
 {
-  clear_input();
   title = get_and_validate_string_length("title", 30, 3);
   description = get_and_validate_string_length("description", 80, 10);
   category = get_and_validate_string_length("category", 15, 3);
@@ -313,7 +387,7 @@ void Product::show_details() const
 }
 
 // * Product class Operator overloading
-ofstream &operator<<(ofstream &out, const Product &p)
+ostream &operator<<(ostream &out, const Product &p)
 {
   out << p.title << "%"
       << p.description << "%"
@@ -329,7 +403,7 @@ ofstream &operator<<(ofstream &out, const Product &p)
   }
   return out;
 }
-ifstream &operator>>(ifstream &in, Product &p)
+istream &operator>>(istream &in, Product &p)
 {
   string priceStr, stockStr, tagCountStr;
 
