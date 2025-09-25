@@ -42,7 +42,14 @@ private:
 public:
   Product();
   Product(string _nothing);
+  string get_title() { return title; }
+  string get_description() { return description; }
+  string get_category() { return category; }
+  string get_brand() { return brand; }
+  int get_stock() { return stock; }
+  float get_Price() { return price; }
   void show_details() const;
+  void update_product();
   friend ofstream &operator<<(ofstream &out, const Product &p);
   friend ifstream &operator>>(ifstream &in, Product &p);
 };
@@ -108,6 +115,12 @@ int main()
       break;
     case OPTIONS::VIEW_ITEMS:
       amazon->view_all_items();
+      break;
+    case OPTIONS::SEARCH_ITEMS:
+      amazon->search_item();
+      break;
+    case OPTIONS::UPDATE_ITEMS:
+      amazon->update_item();
       break;
     default:
       break;
@@ -188,27 +201,56 @@ void Inventory::load_from_file()
   cout << "Loaded from file (total_products = " << total_products << ")" << endl;
 }
 
+void Inventory::search_item() const
+{
+  string temp_title;
+  cout << "Enter product title: ";
+  clear_input();
+  getline(cin, temp_title);
+  for (int i = 0; i < total_products; ++i)
+  {
+    if (temp_title == products[i]->get_title())
+    {
+      show_message_with_borders("Here is the Product with title " + temp_title, BORDER_POSITION::BOTH);
+      products[i]->show_details();
+      break;
+    }
+  }
+}
+
+void Inventory::update_item()
+{
+  clear_input();
+  show_message_with_borders("UPDATE ITEM", BORDER_POSITION::BOTH);
+  cout << "Enter product title: ";
+  string temp_title;
+  getline(cin, temp_title);
+  Product *found_product = nullptr;
+  for (int i = 0; i < total_products; ++i)
+  {
+    if (temp_title == products[i]->get_title())
+    {
+      show_message_with_borders("PRODUCT FOUND", BORDER_POSITION::BOTH);
+      found_product = products[i];
+      break;
+    }
+  }
+  if (found_product == nullptr)
+  {
+    show_message_with_borders("PRODUCT IS NOT IN THE INVENTORY", BORDER_POSITION::BOTH);
+    return;
+  }
+  found_product->show_details();
+  found_product->update_product();
+  found_product = nullptr;
+  save_to_file();
+  show_message_with_borders("PRODUCT UPDATED SUCCESSFULLY", BORDER_POSITION::BOTH);
+}
+
 // * product class members and functions
 Product::Product()
 {
-  clear_input();
-  title = get_and_validate_string_length("title", 30, 3);
-  description = get_and_validate_string_length("description", 80, 10);
-  category = get_and_validate_string_length("category", 15, 3);
-  brand = get_and_validate_string_length("brand", 15, 3);
-  price = get_and_validate_number<float>("price", 1000, 1);
-  stock = get_and_validate_number<int>("stock", 1000, 1);
-  tags_count = get_and_validate_number<int>("number of tags", 10, 1);
-  tags = new string[tags_count];
-  char bef[8] = "tag [";
-  bef[6] = ']';
-  char tag_num = '1';
-  for (int i = 0; i < tags_count; ++i)
-  {
-    bef[5] = tag_num;
-    tags[i] = get_and_validate_string_length(bef, 15, 3);
-    tag_num++;
-  }
+  update_product();
 }
 
 Product::Product(string _nothing)
@@ -221,6 +263,32 @@ Product::Product(string _nothing)
   price = 0.0f;
   stock = 0;
   tags_count = 0;
+}
+
+void Product::update_product()
+{
+  clear_input();
+  title = get_and_validate_string_length("title", 30, 3);
+  description = get_and_validate_string_length("description", 80, 10);
+  category = get_and_validate_string_length("category", 15, 3);
+  brand = get_and_validate_string_length("brand", 15, 3);
+  price = get_and_validate_number<float>("price", 1000, 1);
+  stock = get_and_validate_number<int>("stock", 1000, 1);
+  tags_count = get_and_validate_number<int>("number of tags", 10, 1);
+  if (tags != nullptr)
+  {
+    delete[] tags;
+  }
+  tags = new string[tags_count];
+  char bef[8] = "tag [";
+  bef[6] = ']';
+  char tag_num = '1';
+  for (int i = 0; i < tags_count; ++i)
+  {
+    bef[5] = tag_num;
+    tags[i] = get_and_validate_string_length(bef, 15, 3);
+    tag_num++;
+  }
 }
 
 void Product::show_details() const
